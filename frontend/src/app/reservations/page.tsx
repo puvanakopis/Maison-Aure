@@ -11,7 +11,10 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 
 const TIMES = ["5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM"];
 
+import { useAdminStore } from "@/lib/admin-store";
+
 export default function ReservationsPage() {
+  const { addOrder } = useAdminStore();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState<string>("");
   const [guests, setGuests] = useState("2");
@@ -21,6 +24,18 @@ export default function ReservationsPage() {
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (date && time && name && email) {
+      addOrder({
+        customerName: name,
+        email: email,
+        date: date.toISOString().split("T")[0],
+        time: time,
+        guests: Number(guests) || 2,
+        status: "Pending",
+        notes: "Online guest booking via public reservation portal",
+        totalEstimated: (Number(guests) || 2) * 85,
+      });
+    }
     setDone(true);
   }
 

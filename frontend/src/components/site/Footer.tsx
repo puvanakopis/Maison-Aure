@@ -19,7 +19,7 @@ export function Footer() {
               <input
                 type="email"
                 placeholder="Your email address"
-                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground caret-accent"
               />
               <button
                 type="submit"
@@ -41,6 +41,7 @@ export function Footer() {
                 ["/reservations", "Reservations"],
                 ["/gallery", "Gallery"],
                 ["/blog", "Journal"],
+                ["/admin", "Admin Portal"],
               ].map(([href, label]) => (
                 <li key={href}>
                   <Link href={href} className="text-muted-foreground transition hover:text-foreground">

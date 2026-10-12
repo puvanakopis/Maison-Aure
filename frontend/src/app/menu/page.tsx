@@ -4,9 +4,11 @@ import { motion } from "motion/react";
 import { useState } from "react";
 import { PageShell } from "@/components/site/PageShell";
 import { Reveal } from "@/components/site/Reveal";
-import { menuCategories, menuItems } from "@/lib/restaurant-data";
+import { menuCategories } from "@/lib/restaurant-data";
+import { useAdminStore } from "@/lib/admin-store";
 
 export default function MenuPage() {
+  const { items: menuItems } = useAdminStore();
   const [active, setActive] = useState<string>(menuCategories[0].id);
 
   return (

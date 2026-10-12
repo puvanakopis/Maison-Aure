@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from "next/font/google";
+import { AdminProvider } from "@/lib/admin-store";
 import "./globals.css";
 
 const cormorant = Cormorant_Garamond({
@@ -44,7 +45,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${cormorant.variable} ${jakarta.variable} dark`}>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-accent selection:text-accent-foreground">
-        {children}
+        <AdminProvider>
+          {children}
+        </AdminProvider>
       </body>
     </html>
   );
