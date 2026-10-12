@@ -145,10 +145,5 @@ Both the Next.js frontend and Express REST API backend are configured to deploy 
    - `NEXT_PUBLIC_API_URL`: `https://<your-backend-project>.vercel.app/api`
 5. Click **Deploy**.
 
----
-
-### Option 2: Render / Railway (Backend) + Vercel (Frontend)
-
-You can also deploy the backend as a traditional long-running Node.js process using [`render.yaml`](file:///c:/Users/Asus/Downloads/Maison%C2%B7Aur%C3%A9/render.yaml) or Render / Railway dashboard with `Root Directory: backend` and `Start Command: npm start`.
 
 
