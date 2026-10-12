@@ -1,0 +1,30 @@
+{
+  "name": "maison-aure-backend",
+  "version": "1.0.0",
+  "description": "Express.js REST API backend for Maison·Auré luxury restaurant",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "seed": "node src/config/seedData.js",
+    "seedData.js": "node src/config/seedData.js"
+  },
+  "keywords": [
+    "express",
+    "restaurant",
+    "api",
+    "reservations",
+    "menu"
+  ],
+  "author": "Maison·Auré",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^9.11.1"
+  }
+}
