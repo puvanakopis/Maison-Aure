@@ -7,8 +7,6 @@ import {
   Calendar as CalIcon,
   Users,
   Clock,
-  Search,
-  ShieldCheck,
   Mail,
   KeyRound,
   ArrowLeft,
@@ -26,7 +24,7 @@ import { useReservations } from "@/context/ReservationContext";
 const TIMES = ["5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM", "8:00 PM", "8:30 PM", "9:00 PM"];
 
 export default function ReservationsPage() {
-  const { requestOtp, verifyOtp, lookupReservation } = useReservations();
+  const { requestOtp, verifyOtp } = useReservations();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState<string>("");
   const [guests, setGuests] = useState("2");
@@ -46,11 +44,6 @@ export default function ReservationsPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [confirmedRef, setConfirmedRef] = useState<string>("");
 
-  // Status Lookup State
-  const [lookupQuery, setLookupQuery] = useState("");
-  const [lookupResult, setLookupResult] = useState<any[] | null>(null);
-  const [lookupLoading, setLookupLoading] = useState(false);
-  const [lookupError, setLookupError] = useState<string | null>(null);
 
   // Cooldown countdown for OTP resend
   useEffect(() => {
@@ -158,34 +151,11 @@ export default function ReservationsPage() {
     }
   }
 
-  // Status Lookup Handler
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
-    if (!lookupQuery.trim()) return;
-
-    setLookupLoading(true);
-    setLookupError(null);
-    setLookupResult(null);
-
-    try {
-      const results = await lookupReservation(lookupQuery.trim());
-      if (Array.isArray(results) && results.length > 0) {
-        setLookupResult(results);
-      } else {
-        setLookupError("No reservation found with this reference code or email.");
-      }
-    } catch {
-      setLookupError("Failed to connect to reservation database.");
-    } finally {
-      setLookupLoading(false);
-    }
-  }
-
   return (
     <PageShell>
       <section className="mx-auto max-w-7xl px-5 pt-16 sm:px-8 sm:pt-24">
         <div className="grid gap-12 lg:grid-cols-[1.1fr_1fr]">
-          {/* Left Column: Story + Atmosphere & Lookup */}
+          {/* Left Column: Story & Atmosphere */}
           <div>
             <Reveal><p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">— Reservations</p></Reveal>
             <Reveal delay={0.1}>
@@ -201,73 +171,6 @@ export default function ReservationsPage() {
             <Reveal delay={0.3}>
               <div className="mt-10 hidden overflow-hidden rounded-2xl border border-border/60 lg:block">
                 <img src="/images/reservations/atmosphere.jpg" alt="Dining room atmosphere" className="h-64 w-full object-cover" />
-              </div>
-            </Reveal>
-
-            {/* Check Reservation Status Box */}
-            <Reveal delay={0.35}>
-              <div className="mt-8 rounded-2xl border border-border/60 bg-card/60 p-6 backdrop-blur-md">
-                <div className="flex items-center gap-2.5 text-xs uppercase tracking-[0.2em] text-accent">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span>Existing Reservation?</span>
-                </div>
-                <h3 className="mt-2 font-display text-lg text-foreground">Track Table Request Status</h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Check if your reservation has been confirmed by our Maitre D&apos;.
-                </p>
-
-                <form onSubmit={handleLookup} className="mt-4 flex gap-2">
-                  <Input
-                    value={lookupQuery}
-                    onChange={(e) => setLookupQuery(e.target.value)}
-                    placeholder="Enter Code (e.g. ORD-1001) or Email"
-                    className="h-10 text-xs bg-background"
-                  />
-                  <button
-                    type="submit"
-                    disabled={lookupLoading || !lookupQuery.trim()}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-accent px-4 py-2 text-xs font-medium text-accent-foreground transition hover:opacity-90 disabled:opacity-50 cursor-pointer"
-                  >
-                    <Search className="h-3.5 w-3.5" />
-                    {lookupLoading ? "Searching..." : "Track"}
-                  </button>
-                </form>
-
-                {lookupError && (
-                  <p className="mt-3 text-xs text-destructive">{lookupError}</p>
-                )}
-
-                {lookupResult && lookupResult.length > 0 && (
-                  <div className="mt-4 space-y-2.5">
-                    {lookupResult.map((resItem) => (
-                      <div
-                        key={resItem.id}
-                        className="rounded-xl border border-border bg-background/80 p-3.5 text-xs text-foreground"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="font-mono font-medium text-accent">{resItem.id}</span>
-                          <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
-                              resItem.status === "Confirmed"
-                                ? "bg-blue-500/10 text-blue-400 border border-blue-500/30"
-                                : resItem.status === "Pending"
-                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                                : resItem.status === "Completed"
-                                ? "bg-muted text-muted-foreground"
-                                : "bg-destructive/10 text-destructive border border-destructive/30"
-                            }`}
-                          >
-                            {resItem.status}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-muted-foreground">
-                          {resItem.date} at {resItem.time} · {resItem.guests} guests
-                          {resItem.tableNumber ? ` · Table ${resItem.tableNumber}` : ""}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </Reveal>
           </div>
