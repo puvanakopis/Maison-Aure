@@ -6,8 +6,20 @@ import { useRef, useState } from "react";
 import { ArrowRight, Leaf, ChefHat, Sparkles, MapPin, Star } from "lucide-react";
 import { PageShell } from "@/components/site/PageShell";
 import { Reveal, StaggerGroup, StaggerItem } from "@/components/site/Reveal";
-import { menuCategories, testimonials, locations } from "@/lib/restaurant-data";
-import { useAdminStore } from "@/lib/admin-store";
+import { menuCategories } from "@/interfaces/item.interface";
+import { useItems } from "@/context/ItemContext";
+
+const testimonials = [
+  { id: 1, headline: "An unforgettable evening", quote: "Every course was a quiet revelation. The pacing, the lighting, the warmth of the room — a benchmark for what dining should feel like.", name: "Eleanor Whitfield", role: "Food Critic, Le Journal", image: "/images/testimonials/eleanor.jpg" },
+  { id: 2, headline: "Craft you can taste", quote: "The kitchen's restraint is its loudest statement. Pristine ingredients, precise hands, generous heart.", name: "Marcus Tanaka", role: "Chef & Author", image: "/images/testimonials/marcus.jpg" },
+  { id: 3, headline: "Hospitality, rediscovered", quote: "From the first pour to the last bite, the team made us feel like the only guests in the room.", name: "Priya Anand", role: "Travel Writer", image: "/images/testimonials/priya.jpg" },
+];
+
+const locations = [
+  { id: "ny", city: "New York", address: "182 Hudson Street, Tribeca, NY 10013", phone: "+1 (212) 555-0142", hours: "Tue–Sun · 5:30pm – 11:00pm", image: "/images/locations/new-york.jpg" },
+  { id: "ca", city: "California", address: "39 Mission Lane, San Francisco, CA 94103", phone: "+1 (415) 555-0188", hours: "Wed–Sun · 6:00pm – 11:30pm", image: "/images/locations/california.jpg" },
+  { id: "mi", city: "Miami", address: "210 Collins Ave, Miami Beach, FL 33139", phone: "+1 (305) 555-0167", hours: "Daily · 6:00pm – 12:00am", image: "/images/locations/miami.jpg" },
+];
 
 export default function HomePage() {
   // Hero section setup
@@ -18,8 +30,9 @@ export default function HomePage() {
   const heroWords = ["Simply", "Delicious:", "A", "Fusion", "of", "Flavors"];
 
   // MicroMenu section setup
-  const { items: liveItems } = useAdminStore();
-  const [selectedCategory, setSelectedCategory] = useState<string>(menuCategories[0].id);
+  const { items: liveItems, categories } = useItems();
+  const currentCategories = categories.length > 0 ? categories : menuCategories;
+  const [selectedCategory, setSelectedCategory] = useState<string>(currentCategories[0]?.id || "appetizers");
   const visibleMenuItems = liveItems.filter((m) => m.category === selectedCategory).slice(0, 4);
 
   // Features section setup
@@ -31,11 +44,11 @@ export default function HomePage() {
 
   // Testimonials section setup
   const [testimonialIndex, setTestimonialIndex] = useState(0);
-  const currentTestimonial = testimonials[testimonialIndex];
+  const currentTestimonial = testimonials.length > 0 ? (testimonials[testimonialIndex] ?? null) : null;
 
   // Locations section setup
-  const [selectedLocationId, setSelectedLocationId] = useState(locations[0].id);
-  const selectedLocation = locations.find((l) => l.id === selectedLocationId) ?? locations[0];
+  const [selectedLocationId, setSelectedLocationId] = useState(locations[0]?.id ?? "");
+  const selectedLocation = locations.find((l) => l.id === selectedLocationId) ?? locations[0] ?? null;
 
   return (
     <PageShell>
@@ -202,7 +215,7 @@ export default function HomePage() {
         </div>
 
         <div className="mt-10 flex flex-wrap gap-2">
-          {menuCategories.map((c) => (
+          {currentCategories.map((c) => (
             <button
               key={c.id}
               onClick={() => setSelectedCategory(c.id)}
@@ -280,102 +293,106 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="mt-32 border-y border-border/60 bg-card/60 backdrop-blur py-24 text-foreground">
-        <div className="mx-auto max-w-7xl px-5 sm:px-8">
-          <Reveal><p className="text-xs uppercase tracking-[0.3em] text-accent">— Guest Reviews</p></Reveal>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentTestimonial.id}
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              transition={{ duration: 0.5 }}
-              className="mt-8"
-            >
-              <h2 className="font-display text-4xl leading-tight sm:text-6xl text-foreground">&ldquo;{currentTestimonial.headline}&rdquo;</h2>
-              <p className="mt-8 max-w-2xl text-base leading-relaxed text-muted-foreground">{currentTestimonial.quote}</p>
-              <div className="mt-10 flex items-center gap-4">
-                <img src={currentTestimonial.image} alt={currentTestimonial.name} className="h-12 w-12 rounded-full object-cover border border-border/80" />
-                <div>
-                  <p className="text-sm font-medium text-foreground">{currentTestimonial.name}</p>
-                  <p className="text-xs text-muted-foreground">{currentTestimonial.role}</p>
+      {testimonials.length > 0 && currentTestimonial && (
+        <section className="mt-32 border-y border-border/60 bg-card/60 backdrop-blur py-24 text-foreground">
+          <div className="mx-auto max-w-7xl px-5 sm:px-8">
+            <Reveal><p className="text-xs uppercase tracking-[0.3em] text-accent">— Guest Reviews</p></Reveal>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentTestimonial.id}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -16 }}
+                transition={{ duration: 0.5 }}
+                className="mt-8"
+              >
+                <h2 className="font-display text-4xl leading-tight sm:text-6xl text-foreground">&ldquo;{currentTestimonial.headline}&rdquo;</h2>
+                <p className="mt-8 max-w-2xl text-base leading-relaxed text-muted-foreground">{currentTestimonial.quote}</p>
+                <div className="mt-10 flex items-center gap-4">
+                  <img src={currentTestimonial.image} alt={currentTestimonial.name} className="h-12 w-12 rounded-full object-cover border border-border/80" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{currentTestimonial.name}</p>
+                    <p className="text-xs text-muted-foreground">{currentTestimonial.role}</p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-          <div className="mt-10 flex items-center gap-2">
-            {testimonials.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setTestimonialIndex(idx)}
-                className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === testimonialIndex ? "w-10 bg-accent" : "w-5 bg-border hover:bg-muted-foreground/50"}`}
-                aria-label={`Review ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Locations Section */}
-      <section className="mx-auto mt-32 max-w-7xl px-5 sm:px-8">
-        <Reveal><p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">— Find Us</p></Reveal>
-        <Reveal delay={0.1}>
-          <h2 className="mt-4 font-display text-4xl sm:text-5xl">Three rooms. One philosophy.</h2>
-        </Reveal>
-
-        <div className="mt-12 grid gap-8 lg:grid-cols-[1fr_1.2fr]">
-          <div>
-            <div className="flex flex-wrap gap-2">
-              {locations.map((l) => (
+              </motion.div>
+            </AnimatePresence>
+            <div className="mt-10 flex items-center gap-2">
+              {testimonials.map((_, idx) => (
                 <button
-                  key={l.id}
-                  onClick={() => setSelectedLocationId(l.id)}
-                  className={`relative rounded-full px-5 py-2 text-xs uppercase tracking-[0.18em] transition ${
-                    selectedLocationId === l.id ? "text-background" : "text-foreground/70 hover:text-foreground"
-                  }`}
-                >
-                  {selectedLocationId === l.id && (
-                    <motion.span layoutId="loc-pill" className="absolute inset-0 rounded-full bg-accent" transition={{ type: "spring", stiffness: 400, damping: 35 }} />
-                  )}
-                  <span className="relative">{l.city}</span>
-                </button>
+                  key={idx}
+                  onClick={() => setTestimonialIndex(idx)}
+                  className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === testimonialIndex ? "w-10 bg-accent" : "w-5 bg-border hover:bg-muted-foreground/50"}`}
+                  aria-label={`Review ${idx + 1}`}
+                />
               ))}
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Locations Section */}
+      {locations.length > 0 && selectedLocation && (
+        <section className="mx-auto mt-32 max-w-7xl px-5 sm:px-8">
+          <Reveal><p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">— Find Us</p></Reveal>
+          <Reveal delay={0.1}>
+            <h2 className="mt-4 font-display text-4xl sm:text-5xl">Three rooms. One philosophy.</h2>
+          </Reveal>
+
+          <div className="mt-12 grid gap-8 lg:grid-cols-[1fr_1.2fr]">
+            <div>
+              <div className="flex flex-wrap gap-2">
+                {locations.map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => setSelectedLocationId(l.id)}
+                    className={`relative rounded-full px-5 py-2 text-xs uppercase tracking-[0.18em] transition ${
+                      selectedLocationId === l.id ? "text-background" : "text-foreground/70 hover:text-foreground"
+                    }`}
+                  >
+                    {selectedLocationId === l.id && (
+                      <motion.span layoutId="loc-pill" className="absolute inset-0 rounded-full bg-accent" transition={{ type: "spring", stiffness: 400, damping: 35 }} />
+                    )}
+                    <span className="relative">{l.city}</span>
+                  </button>
+                ))}
+              </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={selectedLocation.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.4 }}
+                  className="mt-8 rounded-2xl border border-border/60 bg-card p-8"
+                >
+                  <h3 className="font-display text-3xl">{selectedLocation.city}</h3>
+                  <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{selectedLocation.address}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">{selectedLocation.phone}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{selectedLocation.hours}</p>
+                  <a href="#" className="group mt-6 inline-flex items-center gap-2 text-sm uppercase tracking-[0.2em]">
+                    Get Directions <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                  </a>
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
             <AnimatePresence mode="wait">
               <motion.div
                 key={selectedLocation.id}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.4 }}
-                className="mt-8 rounded-2xl border border-border/60 bg-card p-8"
+                initial={{ opacity: 0, scale: 1.02 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="relative h-[420px] overflow-hidden rounded-2xl border border-border/60"
               >
-                <h3 className="font-display text-3xl">{selectedLocation.city}</h3>
-                <p className="mt-4 flex items-start gap-2 text-sm text-muted-foreground"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-accent" />{selectedLocation.address}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{selectedLocation.phone}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{selectedLocation.hours}</p>
-                <a href="#" className="group mt-6 inline-flex items-center gap-2 text-sm uppercase tracking-[0.2em]">
-                  Get Directions <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
-                </a>
+                <img src={selectedLocation.image} alt={selectedLocation.city} className="h-full w-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-foreground/40 to-transparent" />
               </motion.div>
             </AnimatePresence>
           </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedLocation.id}
-              initial={{ opacity: 0, scale: 1.02 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.6 }}
-              className="relative h-[420px] overflow-hidden rounded-2xl border border-border/60"
-            >
-              <img src={selectedLocation.image} alt={selectedLocation.city} className="h-full w-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-foreground/40 to-transparent" />
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </section>
+        </section>
+      )}
     </PageShell>
   );
 }

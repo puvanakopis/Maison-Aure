@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { Instagram, Facebook, Send } from "lucide-react";
-import { instagramTiles } from "@/lib/restaurant-data";
+
+const instagramTiles = [
+  "/images/instagram/insta-1.jpg",
+  "/images/instagram/insta-2.jpg",
+  "/images/instagram/insta-3.jpg",
+  "/images/instagram/insta-4.jpg",
+  "/images/instagram/insta-5.jpg",
+  "/images/instagram/insta-6.jpg",
+];
 
 export function Footer() {
   return (
@@ -58,7 +66,7 @@ export function Footer() {
               <li>182 Hudson Street</li>
               <li>Tribeca, New York 10013</li>
               <li>+1 (212) 555-0142</li>
-              <li>hello@maisonaure.com</li>
+              <li>admin@maisonaure.com</li>
               <li className="pt-2 text-foreground/60">Tue–Sun · 5:30pm – 11:00pm</li>
             </ul>
           </div>
@@ -83,18 +91,20 @@ export function Footer() {
                 </a>
               </div>
             </div>
-            <div className="mt-6 grid grid-cols-3 gap-1.5">
-              {instagramTiles.map((src, i) => (
-                <div key={i} className="group relative aspect-square overflow-hidden rounded-md border border-border/50">
-                  <img
-                    src={src}
-                    alt="Culinary highlight"
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-background/0 transition group-hover:bg-background/40" />
-                </div>
-              ))}
-            </div>
+            {instagramTiles.length > 0 && (
+              <div className="mt-6 grid grid-cols-3 gap-1.5">
+                {instagramTiles.map((src, i) => (
+                  <div key={i} className="group relative aspect-square overflow-hidden rounded-md border border-border/50">
+                    <img
+                      src={src}
+                      alt="Culinary highlight"
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-background/0 transition group-hover:bg-background/40" />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

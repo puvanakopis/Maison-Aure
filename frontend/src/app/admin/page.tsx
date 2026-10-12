@@ -2,8 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
-import { useAdminStore } from "@/lib/admin-store";
-import { menuCategories } from "@/lib/restaurant-data";
+import { useItems } from "@/context/ItemContext";
+import { useReservations } from "@/context/ReservationContext";
+import { menuCategories } from "@/interfaces/item.interface";
 import {
   UtensilsCrossed,
   CalendarCheck,
@@ -20,7 +21,8 @@ import {
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
-  const { items, orders, updateOrderStatus } = useAdminStore();
+  const { items, categories } = useItems();
+  const { reservations: orders, updateReservationStatus: updateOrderStatus, stats } = useReservations();
 
   const pendingOrders = orders.filter((o) => o.status === "Pending");
   const confirmedOrders = orders.filter((o) => o.status === "Confirmed");

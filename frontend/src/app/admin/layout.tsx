@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useAdminStore } from "@/lib/admin-store";
+import { useAuth } from "@/context/AuthContext";
+import { useReservations } from "@/context/ReservationContext";
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -19,13 +20,14 @@ import {
 } from "lucide-react";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, logout, orders } = useAdminStore();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { reservations } = useReservations();
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const pendingOrdersCount = orders.filter((o) => o.status === "Pending").length;
+  const pendingOrdersCount = reservations.filter((o) => o.status === "Pending").length;
 
   useEffect(() => {
     setMounted(true);
@@ -143,8 +145,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 MA
               </div>
               <div className="truncate">
-                <p className="truncate text-xs font-medium text-foreground">Chef Manager</p>
-                <p className="truncate text-[10px] text-muted-foreground">admin@maisonaure.com</p>
+                <p className="truncate text-xs font-medium text-foreground">{user?.name || "Executive Maitre D'"}</p>
+                <p className="truncate text-[10px] text-muted-foreground">{user?.email || "admin@maisonaure.com"}</p>
               </div>
             </div>
             <button

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { useAdminStore } from "@/lib/admin-store";
-import { MenuItem, menuCategories } from "@/lib/restaurant-data";
+import { useItems } from "@/context/ItemContext";
+import { MenuItem, menuCategories } from "@/interfaces/item.interface";
 import {
   Plus,
   Search,
@@ -20,7 +20,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 export default function ManageItemsPage() {
-  const { items, addItem, updateItem, deleteItem } = useAdminStore();
+  const { items, createItem: addItem, updateItem, deleteItem } = useItems();
   const searchParams = useSearchParams();
 
   const [activeCategory, setActiveCategory] = useState<string>("all");

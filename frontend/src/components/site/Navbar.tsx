@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Menu, X, ShieldCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/components/ui/button";
 
 const links = [
   { to: "/about", label: "Our Story" },
@@ -76,13 +76,6 @@ export function Navbar() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/admin"
-              title="Admin Portal"
-              className="grid h-10 w-10 place-items-center rounded-full border border-border/70 text-muted-foreground hover:border-accent hover:text-accent hover:bg-card transition-colors"
-            >
-              <ShieldCheck className="h-4 w-4" />
-            </Link>
             <Link
               href="/reservations"
               className="hidden rounded-full bg-foreground px-5 py-2.5 text-xs uppercase tracking-[0.18em] text-background transition-transform hover:scale-[1.03] sm:inline-flex"

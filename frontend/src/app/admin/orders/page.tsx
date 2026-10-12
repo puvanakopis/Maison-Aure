@@ -1,7 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { useAdminStore, OrderStatus, OrderItem } from "@/lib/admin-store";
+import { useReservations } from "@/context/ReservationContext";
+import {
+  ReservationStatus as OrderStatus,
+  ReservationItem as OrderItem,
+} from "@/interfaces/reservation.interface";
 import {
   CalendarCheck,
   Search,
@@ -24,7 +28,12 @@ import {
 import { Input } from "@/components/ui/input";
 
 export default function ManageOrdersPage() {
-  const { orders, updateOrderStatus, deleteOrder, addOrder } = useAdminStore();
+  const {
+    reservations: orders,
+    updateReservationStatus: updateOrderStatus,
+    deleteReservation: deleteOrder,
+    createReservation: addOrder,
+  } = useReservations();
 
   const [activeStatus, setActiveStatus] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
