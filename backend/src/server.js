@@ -58,7 +58,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Ensure database connection is active (vital for Vercel serverless cold starts)
 app.use(async (req, res, next) => {
-  if (mongoose.connection.readyState !== 1) {
+  if (mongoose.connection.readyState === 0) {
     try {
       await connectDB();
     } catch (err) {

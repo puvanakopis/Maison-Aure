@@ -2,36 +2,104 @@ const mongoose = require("mongoose");
 const Item = require("../models/ItemModel");
 const { menuCategories, seedMenuItems } = require("../config/seedData");
 
+// In-memory fallback helper
+function getFallbackItems(category, search) {
+  let list = seedMenuItems.map((item) => ({
+    ...item,
+    customId: item.id,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }));
+
+  if (category && category !== "all") {
+    list = list.filter((i) => i.category === category);
+  }
+
+  if (search && search.trim()) {
+    const term = search.trim().toLowerCase();
+    list = list.filter(
+      (i) =>
+        (i.name && i.name.toLowerCase().includes(term)) ||
+        (i.description && i.description.toLowerCase().includes(term)) ||
+        (i.ingredients &&
+          Array.isArray(i.ingredients) &&
+          i.ingredients.some((ing) => ing.toLowerCase().includes(term)))
+    );
+  }
+
+  return list;
+}
+
 // GET /api/items (Public)
 async function getAllItems(req, res) {
+  const { category, search } = req.query;
+
   try {
-    const { category, search } = req.query;
-    const query = {};
+    // Only attempt MongoDB query if database connection is active
+    if (mongoose.connection.readyState === 1) {
+      const query = {};
 
-    if (category && category !== "all") {
-      query.category = category;
+      if (category && category !== "all") {
+        query.category = category;
+      }
+
+      if (search && search.trim()) {
+        const regex = { $regex: search.trim(), $options: "i" };
+        query.$or = [
+          { name: regex },
+          { description: regex },
+          { ingredients: regex },
+        ];
+      }
+
+      const items = await Item.find(query).sort({ createdAt: -1 });
+
+      // Auto-seed if database is completely empty and no filters were supplied
+      if (items.length === 0 && (!category || category === "all") && !search) {
+        try {
+          const totalInDb = await Item.countDocuments({});
+          if (totalInDb === 0) {
+            console.log("MongoDB items collection is empty. Auto-seeding initial catalog...");
+            const formattedItems = seedMenuItems.map((item) => ({
+              ...item,
+              customId: item.id,
+            }));
+            const seeded = await Item.insertMany(formattedItems);
+            return res.status(200).json({
+              success: true,
+              count: seeded.length,
+              data: seeded,
+            });
+          }
+        } catch (seedError) {
+          console.warn("Auto-seeding attempt failed:", seedError.message);
+        }
+      }
+
+      // Return items if found, or if a specific filter yielded 0 matches
+      if (items.length > 0 || (category && category !== "all") || search) {
+        return res.status(200).json({
+          success: true,
+          count: items.length,
+          data: items,
+        });
+      }
     }
 
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { ingredients: { $regex: search, $options: "i" } },
-      ];
-    }
-
-    const items = await Item.find(query).sort({ createdAt: -1 });
-
+    // Fallback if MongoDB is disconnected or unpopulated
+    const fallbackItems = getFallbackItems(category, search);
     return res.status(200).json({
       success: true,
-      count: items.length,
-      data: items,
+      count: fallbackItems.length,
+      data: fallbackItems,
     });
   } catch (error) {
-    console.error("Error fetching items from MongoDB:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Failed to retrieve menu items from database.",
+    console.warn("Notice: MongoDB query failed, using built-in menu fallback:", error.message);
+    const fallbackItems = getFallbackItems(category, search);
+    return res.status(200).json({
+      success: true,
+      count: fallbackItems.length,
+      data: fallbackItems,
     });
   }
 }
@@ -53,27 +121,60 @@ function getCategories(req, res) {
 
 // GET /api/items/:id (Public)
 async function getItemById(req, res) {
+  const { id } = req.params;
+
   try {
-    const { id } = req.params;
-    const isObjectId = mongoose.isValidObjectId(id);
+    if (mongoose.connection.readyState === 1) {
+      const isObjectId = mongoose.isValidObjectId(id);
+      const item = await Item.findOne({
+        $or: [{ customId: id }, ...(isObjectId ? [{ _id: id }] : [])],
+      });
 
-    const item = await Item.findOne({
-      $or: [{ customId: id }, ...(isObjectId ? [{ _id: id }] : [])],
-    });
+      if (item) {
+        return res.status(200).json({
+          success: true,
+          data: item,
+        });
+      }
+    }
 
-    if (!item) {
-      return res.status(404).json({
-        success: false,
-        message: `Menu item with ID '${id}' not found.`,
+    // Check seed fallback
+    const fallbackItem = seedMenuItems.find(
+      (i) => String(i.id) === String(id) || String(i.customId) === String(id)
+    );
+
+    if (fallbackItem) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...fallbackItem,
+          customId: fallbackItem.id,
+          id: fallbackItem.id,
+        },
       });
     }
 
-    return res.status(200).json({
-      success: true,
-      data: item,
+    return res.status(404).json({
+      success: false,
+      message: `Menu item with ID '${id}' not found.`,
     });
   } catch (error) {
-    console.error("Error retrieving item:", error);
+    console.warn("MongoDB error during getItemById, checking fallback:", error.message);
+    const fallbackItem = seedMenuItems.find(
+      (i) => String(i.id) === String(id) || String(i.customId) === String(id)
+    );
+
+    if (fallbackItem) {
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...fallbackItem,
+          customId: fallbackItem.id,
+          id: fallbackItem.id,
+        },
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Failed to retrieve item.",

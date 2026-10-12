@@ -31,7 +31,7 @@ async function connectDB() {
   try {
     const conn = await mongoose.connect(uri, {
       dbName: DB_NAME,
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 5000,
     });
 
     isMongoConnected = true;

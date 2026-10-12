@@ -40,10 +40,22 @@ async function request<T>(
     ...(options.headers as Record<string, string>),
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+    });
+  } catch (err: any) {
+    const isNetworkError =
+      err instanceof TypeError ||
+      err?.name === "TypeError" ||
+      err?.message?.includes("fetch");
+    const message = isNetworkError
+      ? `Network error: Unable to reach API server at ${API_BASE_URL}. Please ensure the backend server is running.`
+      : err?.message || "Failed to communicate with API server.";
+    throw new ApiError(message, 0, { originalError: err });
+  }
 
   let data: any = null;
   const contentType = response.headers.get("content-type");

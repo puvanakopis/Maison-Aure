@@ -27,7 +27,13 @@ const itemSchema = new mongoose.Schema(
     toJSON: {
       virtuals: true,
       transform: (doc, ret) => {
-        ret.id = ret.customId || ret._id.toString();
+        ret.id =
+          ret.customId ||
+          (ret._id
+            ? ret._id.toString()
+            : doc && doc._id
+            ? doc._id.toString()
+            : String((doc && doc.id) || ""));
         delete ret._id;
         delete ret.__v;
         return ret;
