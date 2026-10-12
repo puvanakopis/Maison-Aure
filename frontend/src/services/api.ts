@@ -1,5 +1,6 @@
-const API_BASE_URL =
+const rawBaseUrl =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = rawBaseUrl.replace(/\/+$/, "");
 
 export class ApiError extends Error {
   status: number;
@@ -30,7 +31,8 @@ async function request<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
+  const cleanEndpoint = endpoint.startsWith("/") ? endpoint : `/${endpoint}`;
+  const url = `${API_BASE_URL}${cleanEndpoint}`;
 
   const headers: Record<string, string> = {
     "Content-Type": "application/json",

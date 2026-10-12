@@ -113,3 +113,42 @@ Visit:
 | `GET` | `/api/orders/stats` | Admin (JWT) | Aggregates seated covers, pending approvals, and revenue analytics |
 | `PATCH` | `/api/orders/:id` | Admin (JWT) | Updates status (e.g. approve/confirm, seat, cancel) and assigns table numbers |
 | `DELETE` | `/api/orders/:id` | Admin (JWT) | Removes or rejects booking |
+
+---
+
+## Production Deployment Guide
+
+### Option 1: Full Vercel Deployment (Frontend & Backend Serverless)
+
+Both the Next.js frontend and Express REST API backend are configured to deploy seamlessly on [Vercel](https://vercel.com).
+
+#### Step 1: Deploy Backend API on Vercel
+1. In the Vercel Dashboard, click **Add New...** > **Project** and select your repository.
+2. Under **Root Directory**, click **Edit** and choose `backend`.
+3. Framework Preset: **Other**.
+4. In **Environment Variables**, add:
+   - `MONGODB_URI`: `mongodb+srv://<user>:<password>@cluster0.mongodb.net/maison_aure?retryWrites=true&w=majority`
+   - `NODE_ENV`: `production`
+   - `JWT_SECRET`: A long random secret string
+   - `JWT_EXPIRES_IN`: `7d`
+   - `ADMIN_NAME`: `Executive Admin`
+   - `ADMIN_EMAIL`: `admin@maisonaure.com`
+   - `ADMIN_PASSWORD`: Your chosen secure admin password
+   - `FRONTEND_URL`: `*` (or your frontend Vercel URL once deployed)
+5. Click **Deploy**. Note your backend domain (e.g., `https://maison-aure-api.vercel.app`).
+
+#### Step 2: Deploy Frontend on Vercel
+1. In the Vercel Dashboard, import the same repository as a second project.
+2. Under **Root Directory**, choose `frontend`.
+3. Framework Preset: **Next.js**.
+4. In **Environment Variables**, add:
+   - `NEXT_PUBLIC_API_URL`: `https://<your-backend-project>.vercel.app/api`
+5. Click **Deploy**.
+
+---
+
+### Option 2: Render / Railway (Backend) + Vercel (Frontend)
+
+You can also deploy the backend as a traditional long-running Node.js process using [`render.yaml`](file:///c:/Users/Asus/Downloads/Maison%C2%B7Aur%C3%A9/render.yaml) or Render / Railway dashboard with `Root Directory: backend` and `Start Command: npm start`.
+
+

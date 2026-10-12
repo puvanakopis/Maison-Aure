@@ -1,0 +1,49 @@
+services:
+  # ----------------------------------------------------
+  # Maison·Auré — Express REST API Web Service
+  # ----------------------------------------------------
+  - type: web
+    name: maison-aure-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: ADMIN_NAME
+        value: Executive Admin
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ADMIN_ROLE
+        value: admin
+      - key: FRONTEND_URL
+        sync: false
+
+  # ----------------------------------------------------
+  # Maison·Auré — Next.js 15 App Router Frontend
+  # ----------------------------------------------------
+  - type: web
+    name: maison-aure-frontend
+    env: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        sync: false

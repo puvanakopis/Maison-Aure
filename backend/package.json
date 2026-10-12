@@ -7,8 +7,12 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
+    "build": "node -e \"console.log('Backend ready for production')\"",
     "seed": "node src/config/seedData.js",
     "seedData.js": "node src/config/seedData.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [
     "express",
