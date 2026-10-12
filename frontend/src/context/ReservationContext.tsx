@@ -6,6 +6,8 @@ import {
   CreateReservationDto,
   ReservationStats,
   ReservationStatus,
+  RequestOtpResponse,
+  VerifyOtpDto,
 } from "@/interfaces/reservation.interface";
 import { reservationService } from "@/services/reservationService";
 
@@ -21,6 +23,8 @@ interface ReservationContextType {
   }) => Promise<ReservationItem[]>;
   fetchStats: () => Promise<ReservationStats | null>;
   createReservation: (data: CreateReservationDto) => Promise<ReservationItem>;
+  requestOtp: (data: CreateReservationDto) => Promise<RequestOtpResponse>;
+  verifyOtp: (dto: VerifyOtpDto) => Promise<ReservationItem>;
   lookupReservation: (query: string) => Promise<ReservationItem[]>;
   updateReservation: (
     id: string,
@@ -138,6 +142,26 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
     []
   );
 
+  const requestOtp = useCallback(
+    async (data: CreateReservationDto): Promise<RequestOtpResponse> => {
+      return await reservationService.requestOtp(data);
+    },
+    []
+  );
+
+  const verifyOtp = useCallback(
+    async (dto: VerifyOtpDto): Promise<ReservationItem> => {
+      const created = await reservationService.verifyOtp(dto);
+      setReservations((prev) => {
+        const next = [created, ...prev];
+        setStats(calculateLocalStats(next));
+        return next;
+      });
+      return created;
+    },
+    []
+  );
+
   const lookupReservation = useCallback(
     async (query: string): Promise<ReservationItem[]> => {
       try {
@@ -218,6 +242,8 @@ export function ReservationProvider({ children }: { children: React.ReactNode })
         fetchReservations,
         fetchStats,
         createReservation,
+        requestOtp,
+        verifyOtp,
         lookupReservation,
         updateReservation,
         updateReservationStatus,

@@ -29,6 +29,19 @@ export interface CreateReservationDto {
   status?: ReservationStatus;
 }
 
+export interface RequestOtpResponse {
+  success: boolean;
+  message: string;
+  email: string;
+  expiresInSeconds?: number;
+  devOtp?: string;
+}
+
+export interface VerifyOtpDto {
+  email: string;
+  otp: string;
+}
+
 export interface ReservationStats {
   total: number;
   pending: number;

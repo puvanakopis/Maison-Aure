@@ -101,6 +101,24 @@ export default function ManageOrdersPage() {
     setModalOpen(false);
   }
 
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  async function handleStatusChange(id: string, newStatus: OrderStatus) {
+    try {
+      await updateOrderStatus(id, newStatus);
+      if (newStatus === "Confirmed") {
+        setToastMessage(`Reservation ${id} confirmed! Confirmation email dispatched to customer.`);
+      } else if (newStatus === "Completed") {
+        setToastMessage(`Reservation ${id} marked completed! Thank-you dining email dispatched to customer.`);
+      } else {
+        setToastMessage(`Reservation ${id} status updated to ${newStatus}.`);
+      }
+      setTimeout(() => setToastMessage(null), 5000);
+    } catch (err: any) {
+      console.error("Failed to update status:", err);
+    }
+  }
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -135,6 +153,14 @@ export default function ManageOrdersPage() {
           <span>Manual Reservation</span>
         </button>
       </div>
+
+      {/* Email Status Toast Notification */}
+      {toastMessage && (
+        <div className="flex items-center gap-2.5 rounded-2xl border border-accent/40 bg-accent/10 px-5 py-3.5 text-xs text-foreground shadow-lg backdrop-blur">
+          <Mail className="h-4 w-4 text-accent shrink-0" />
+          <span className="font-medium">{toastMessage}</span>
+        </div>
+      )}
 
       {/* Filter and Search Bar */}
       <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card/60 p-4 sm:flex-row sm:items-center sm:justify-between backdrop-blur">
@@ -263,7 +289,7 @@ export default function ManageOrdersPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={ord.status}
-                  onChange={(e) => updateOrderStatus(ord.id, e.target.value as OrderStatus)}
+                  onChange={(e) => handleStatusChange(ord.id, e.target.value as OrderStatus)}
                   className="rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold uppercase tracking-wider text-foreground focus:outline-none focus:border-accent cursor-pointer"
                 >
                   {statuses.map((st) => (
@@ -275,7 +301,7 @@ export default function ManageOrdersPage() {
 
                 {ord.status === "Pending" && (
                   <button
-                    onClick={() => updateOrderStatus(ord.id, "Confirmed")}
+                    onClick={() => handleStatusChange(ord.id, "Confirmed")}
                     className="rounded-xl bg-accent px-4 py-2 text-xs font-semibold uppercase tracking-wider text-accent-foreground hover:bg-accent/90 transition shadow-sm cursor-pointer"
                   >
                     Confirm
@@ -284,7 +310,7 @@ export default function ManageOrdersPage() {
 
                 {ord.status === "Confirmed" && (
                   <button
-                    onClick={() => updateOrderStatus(ord.id, "Completed")}
+                    onClick={() => handleStatusChange(ord.id, "Completed")}
                     className="rounded-xl border border-border/80 bg-background px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:border-accent hover:text-accent transition cursor-pointer"
                   >
                     Complete

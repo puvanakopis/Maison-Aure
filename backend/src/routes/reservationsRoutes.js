@@ -3,7 +3,9 @@ const router = express.Router();
 const reservationsController = require("../controllers/reservationsController");
 const { authMiddleware } = require("../middleware/auth");
 
-// Public endpoints (Used by guests reserving a table and checking status)
+// Public endpoints (Used by guests reserving a table with OTP verification and checking status)
+router.post("/request-otp", reservationsController.requestReservationOtp);
+router.post("/verify-otp", reservationsController.verifyReservationOtp);
 router.post("/", reservationsController.createReservation);
 router.get("/lookup", reservationsController.lookupReservation);
 

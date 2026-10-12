@@ -1,9 +1,173 @@
 const Reservation = require("../models/ReservationModel");
+const OtpVerification = require("../models/OtpModel");
+const emailService = require("../services/emailService");
 
-// POST /api/reservations (Public - User creates a reservation)
-async function createReservation(req, res) {
+// 1. POST /api/reservations/request-otp (Public - Guest requests verification code for table booking)
+async function requestReservationOtp(req, res) {
   try {
     const { customerName, email, phone, date, time, guests, notes, totalEstimated } = req.body;
+
+    if (!customerName || !email || !date || !time) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: Name, email, date, and time are required.",
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide a valid email address.",
+      });
+    }
+
+    const guestCount = Number(guests) || 2;
+    if (guestCount < 1 || guestCount > 20) {
+      return res.status(400).json({
+        success: false,
+        message: "Guest count must be between 1 and 20 guests.",
+      });
+    }
+
+    // Generate 6-digit OTP code
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresInMinutes = 10;
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
+
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Store or update pending verification in MongoDB
+    await OtpVerification.findOneAndUpdate(
+      { email: cleanEmail },
+      {
+        otp,
+        reservationData: {
+          customerName: customerName.trim(),
+          email: cleanEmail,
+          phone: phone ? phone.trim() : "",
+          date,
+          time,
+          guests: guestCount,
+          notes: notes ? notes.trim() : "Online guest booking via public reservation portal",
+          totalEstimated: totalEstimated !== undefined ? Number(totalEstimated) : guestCount * 85,
+        },
+        expiresAt,
+      },
+      { upsert: true, new: true }
+    );
+
+    // Send OTP email
+    await emailService.sendReservationOtpEmail({
+      to: cleanEmail,
+      name: customerName.trim(),
+      otp,
+      expiresInMinutes,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `A 6-digit verification code has been dispatched to ${cleanEmail}.`,
+      email: cleanEmail,
+      expiresInSeconds: expiresInMinutes * 60,
+      // Provide devOtp when in non-production or for testing convenience
+      devOtp: process.env.NODE_ENV !== "production" ? otp : undefined,
+    });
+  } catch (error) {
+    console.error("Error requesting reservation OTP:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to dispatch verification code. Please try again.",
+    });
+  }
+}
+
+// 2. POST /api/reservations/verify-otp (Public - Guest verifies OTP, saving reservation as Pending for admin)
+async function verifyReservationOtp(req, res) {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Email address and 6-digit verification code are required.",
+      });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.toString().trim();
+
+    const record = await OtpVerification.findOne({
+      email: cleanEmail,
+      otp: cleanOtp,
+    });
+
+    if (!record) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid verification code. Please check your email or request a new code.",
+      });
+    }
+
+    if (new Date() > record.expiresAt) {
+      await OtpVerification.deleteOne({ _id: record._id });
+      return res.status(400).json({
+        success: false,
+        message: "Verification code has expired. Please request a new code.",
+      });
+    }
+
+    const draft = record.reservationData;
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const customId = `ORD-${randomSuffix}`;
+
+    // Create active reservation for admin to review
+    const newReservation = await Reservation.create({
+      customId,
+      customerName: draft.customerName,
+      email: draft.email,
+      phone: draft.phone || "",
+      date: draft.date,
+      time: draft.time,
+      guests: draft.guests,
+      notes: draft.notes,
+      totalEstimated: draft.totalEstimated,
+      status: "Pending",
+    });
+
+    // Clean up OTP record
+    await OtpVerification.deleteOne({ _id: record._id });
+
+    // Send acknowledgment email to customer (non-blocking)
+    emailService
+      .sendReservationReceivedEmail({
+        to: newReservation.email,
+        name: newReservation.customerName,
+        customId: newReservation.customId,
+        date: newReservation.date,
+        time: newReservation.time,
+        guests: newReservation.guests,
+      })
+      .catch((err) => console.error("Error sending received acknowledgment email:", err));
+
+    return res.status(201).json({
+      success: true,
+      message: `Table held! Your reservation reference is ${newReservation.customId}.`,
+      data: newReservation,
+    });
+  } catch (error) {
+    console.error("Error verifying reservation OTP:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to verify reservation code.",
+    });
+  }
+}
+
+// 3. POST /api/reservations (Direct creation - Used by admin or direct callers)
+async function createReservation(req, res) {
+  try {
+    const { customerName, email, phone, date, time, guests, tableNumber, status, notes, totalEstimated } = req.body;
 
     if (!customerName || !email || !date || !time) {
       return res.status(400).json({
@@ -22,6 +186,7 @@ async function createReservation(req, res) {
 
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const customId = `ORD-${randomSuffix}`;
+    const initialStatus = status || "Pending";
 
     const newReservation = await Reservation.create({
       customId,
@@ -31,10 +196,27 @@ async function createReservation(req, res) {
       date,
       time,
       guests: guestCount,
-      notes: notes || "Online guest booking via public reservation portal",
+      tableNumber: tableNumber || undefined,
+      notes: notes || "Manual reservation recorded by staff",
       totalEstimated: totalEstimated !== undefined ? Number(totalEstimated) : guestCount * 85,
-      status: "Pending",
+      status: initialStatus,
     });
+
+    // If directly created as Confirmed by admin, send confirmation email immediately
+    if (initialStatus === "Confirmed") {
+      emailService
+        .sendReservationConfirmedEmail({
+          to: newReservation.email,
+          name: newReservation.customerName,
+          customId: newReservation.customId,
+          date: newReservation.date,
+          time: newReservation.time,
+          guests: newReservation.guests,
+          tableNumber: newReservation.tableNumber,
+          notes: newReservation.notes,
+        })
+        .catch((err) => console.error("Error sending direct confirmation email:", err));
+    }
 
     return res.status(201).json({
       success: true,
@@ -50,7 +232,7 @@ async function createReservation(req, res) {
   }
 }
 
-// GET /api/reservations/lookup (Public - User checks their reservation status)
+// 4. GET /api/reservations/lookup (Public - User checks their reservation status)
 async function lookupReservation(req, res) {
   try {
     const { id, email } = req.query;
@@ -91,7 +273,7 @@ async function lookupReservation(req, res) {
   }
 }
 
-// GET /api/reservations or /api/orders (Admin protected)
+// 5. GET /api/reservations or /api/orders (Admin protected)
 async function getAllReservations(req, res) {
   try {
     const { status, search, date } = req.query;
@@ -126,7 +308,7 @@ async function getAllReservations(req, res) {
   }
 }
 
-// GET /api/reservations/stats (Admin protected)
+// 6. GET /api/reservations/stats (Admin protected)
 async function getReservationStats(req, res) {
   try {
     const reservations = await Reservation.find({});
@@ -160,7 +342,7 @@ async function getReservationStats(req, res) {
   }
 }
 
-// GET /api/reservations/:id (Admin protected)
+// 7. GET /api/reservations/:id (Admin protected)
 async function getReservationById(req, res) {
   try {
     const { id } = req.params;
@@ -185,21 +367,55 @@ async function getReservationById(req, res) {
   }
 }
 
-// PUT /api/reservations/:id or PATCH /api/reservations/:id (Admin protected)
+// 8. PUT /api/reservations/:id or PATCH /api/reservations/:id (Admin protected)
+// Triggers automatic customer emails on status change to "Confirmed" or "Completed"
 async function updateReservation(req, res) {
   try {
     const { id } = req.params;
+
+    // Fetch existing reservation first to compare status transition
+    const existing = await Reservation.findOne({ customId: id });
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: `Reservation '${id}' not found.`,
+      });
+    }
+
+    const previousStatus = existing.status;
+
     const updated = await Reservation.findOneAndUpdate(
       { customId: id },
       req.body,
       { new: true }
     );
 
-    if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: `Reservation '${id}' not found.`,
-      });
+    const newStatus = updated.status;
+
+    // Check status transitions for automated customer emails
+    if (newStatus === "Confirmed" && previousStatus !== "Confirmed") {
+      emailService
+        .sendReservationConfirmedEmail({
+          to: updated.email,
+          name: updated.customerName,
+          customId: updated.customId,
+          date: updated.date,
+          time: updated.time,
+          guests: updated.guests,
+          tableNumber: updated.tableNumber,
+          notes: updated.notes,
+        })
+        .catch((err) => console.error("Error sending Confirmed email:", err));
+    } else if (newStatus === "Completed" && previousStatus !== "Completed") {
+      emailService
+        .sendReservationCompletedEmail({
+          to: updated.email,
+          name: updated.customerName,
+          customId: updated.customId,
+          date: updated.date,
+        })
+        .catch((err) => console.error("Error sending Completed thank you email:", err));
     }
 
     return res.status(200).json({
@@ -216,7 +432,7 @@ async function updateReservation(req, res) {
   }
 }
 
-// DELETE /api/reservations/:id (Admin protected)
+// 9. DELETE /api/reservations/:id (Admin protected)
 async function deleteReservation(req, res) {
   try {
     const { id } = req.params;
@@ -244,6 +460,8 @@ async function deleteReservation(req, res) {
 }
 
 module.exports = {
+  requestReservationOtp,
+  verifyReservationOtp,
   createReservation,
   lookupReservation,
   getAllReservations,

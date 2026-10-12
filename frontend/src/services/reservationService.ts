@@ -6,9 +6,27 @@ import {
   ReservationsResponse,
   SingleReservationResponse,
   ReservationStatsResponse,
+  RequestOtpResponse,
+  VerifyOtpDto,
 } from "@/interfaces/reservation.interface";
 
 export const reservationService = {
+  async requestOtp(data: CreateReservationDto): Promise<RequestOtpResponse> {
+    const res = await apiClient.post<RequestOtpResponse>(
+      "/reservations/request-otp",
+      data
+    );
+    return res;
+  },
+
+  async verifyOtp(data: VerifyOtpDto): Promise<ReservationItem> {
+    const res = await apiClient.post<SingleReservationResponse>(
+      "/reservations/verify-otp",
+      data
+    );
+    return res.data;
+  },
+
   async createReservation(
     data: CreateReservationDto
   ): Promise<ReservationItem> {
